@@ -1,58 +1,11 @@
-mod character_sheet;
-mod dnd_gui;
-
 use eframe::{egui, epi};
-use serde::{Serialize, Deserialize};
-use std::fs::File;
-use std::io::Write;
+use crate::character_sheet::CharacterSheet;
 
-#[derive(Default, Serialize, Deserialize)]
-struct CharacterSheet {
-    name: String,
-    class: String,
-    race: String,
-    strength: i32,
-    dexterity: i32,
-    constitution: i32,
-    intelligence: i32,
-    wisdom: i32,
-    charisma: i32,
+pub struct DndGui {
+    pub character: CharacterSheet,
 }
 
-impl CharacterSheet {
-    fn new() -> Self {
-        Self {
-            name: "Character Name".to_string(),
-            class: "Class".to_string(),
-            race: "Race".to_string(),
-            strength: 10,
-            dexterity: 10,
-            constitution: 10,
-            intelligence: 10,
-            wisdom: 10,
-            charisma: 10,
-        }
-    }
-    fn save_to_file(&self, filename: &str) {
-        let json = serde_json::to_string_pretty(self).unwrap();
-        let mut file = File::create(filename).unwrap();
-        file.write_all(json.as_bytes()).unwrap();
-    }
-}
-
-fn main() {
-    let options = eframe::NativeOptions::default();
-    eframe::run_native(
-        Box::new(DndCharSheet::default()),
-        options,
-    );
-}
-
-struct DndCharSheet {
-    character: CharacterSheet,
-}
-
-impl Default for DndCharSheet {
+impl Default for DndGui {
     fn default() -> Self {
         Self {
             character: CharacterSheet::new(),
@@ -60,7 +13,7 @@ impl Default for DndCharSheet {
     }
 }
 
-impl epi::App for DndCharSheet {
+impl epi::App for DndGui {
     fn update(&mut self, ctx: &egui::CtxRef, _frame: &eframe::epi::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("D&D Character Sheet");
@@ -109,8 +62,13 @@ impl epi::App for DndCharSheet {
                 ui.label("Charisma:");
                 ui.add(egui::DragValue::new(&mut self.character.charisma));
             });
+
             if ui.button("Save").clicked() {
                 self.character.save_to_file("character_sheet.json");
+            }
+
+            if ui.button("Load").clicked() {
+                self.character = CharacterSheet::load_from_file("character_sheet.json");
             }
         });
     }
