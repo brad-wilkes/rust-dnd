@@ -1,3 +1,5 @@
+mod character_sheet;
+
 use eframe::{egui, epi};
 use serde::{Serialize, Deserialize};
 use std::fs::File;
