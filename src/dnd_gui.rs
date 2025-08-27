@@ -1,9 +1,12 @@
 use eframe::{egui, epi};
 use crate::character_sheet::CharacterSheet;
+use crate::dice::{DieType, roll_die};
 
 pub struct DndGui {
     pub character: CharacterSheet,
     pub status: String,
+    pub selected_die: usize,
+    pub last_roll: Option<u32>
 }
 
 impl Default for DndGui {
@@ -11,6 +14,8 @@ impl Default for DndGui {
         Self {
             character: CharacterSheet::new(),
             status: String::new(),
+            selected_die: 0,
+            last_roll: None,
         }
     }
 }
@@ -81,9 +86,30 @@ impl epi::App for DndGui {
             if !self.status.is_empty() {
                 ui.label(&self.status);
             }
+
+            ui.separator();
+            ui.heading("Dice Roller");
+
+            let die_types = DieType::all();
+            let die_names: Vec<&str> = die_types.iter().map(|d| d.as_str()).collect();
+            egui::ComboBox::from_label("Die")
+                .selected_text(die_names[self.selected_die])
+                .show_ui(ui, |ui| {
+                    for (i, name) in die_names.iter().enumerate() {
+                        ui.selectable_value(&mut self.selected_die, i, *name);
+                    }
+                });
+
+            if ui.button("Roll").clicked() {
+                let die = die_types[self.selected_die].clone();
+                self.last_roll = Some(roll_die(die));
+            }
+
+            if let Some(roll) = self.last_roll {
+                ui.label(format!("Result: {}", roll));
+            }
         });
     }
-
     fn name(&self) -> &str {
         "D&D Character Sheet"
     }
