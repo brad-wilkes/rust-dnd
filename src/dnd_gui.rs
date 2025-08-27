@@ -3,12 +3,14 @@ use crate::character_sheet::CharacterSheet;
 
 pub struct DndGui {
     pub character: CharacterSheet,
+    pub status: String,
 }
 
 impl Default for DndGui {
     fn default() -> Self {
         Self {
             character: CharacterSheet::new(),
+            status: String::new(),
         }
     }
 }
@@ -63,12 +65,21 @@ impl epi::App for DndGui {
                 ui.add(egui::DragValue::new(&mut self.character.charisma));
             });
 
+            ui.separator();
+
             if ui.button("Save").clicked() {
-                self.character.save_to_file("character_sheet.json");
+                match self.character.save_to_db() {
+                    Ok(saved) => {
+                        self.status = format!("Saved character '{}' (class_id={})", saved.name, saved.class_id);
+                    }
+                    Err(err) => {
+                        self.status = format!("Error saving character: {}", err);
+                    }
+                }
             }
 
-            if ui.button("Load").clicked() {
-                self.character = CharacterSheet::load_from_file("character_sheet.json");
+            if !self.status.is_empty() {
+                ui.label(&self.status);
             }
         });
     }

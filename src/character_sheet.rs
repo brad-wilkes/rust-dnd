@@ -1,7 +1,5 @@
 // character_sheet.rs
 use serde::{Serialize, Deserialize};
-use std::fs::File;
-use std::io::{Read, Write};
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct CharacterSheet {
@@ -31,16 +29,37 @@ impl CharacterSheet {
         }
     }
 
-    pub fn save_to_file(&self, filename: &str) {
-        let json = serde_json::to_string_pretty(self).unwrap();
-        let mut file = File::create(filename).unwrap();
-        file.write_all(json.as_bytes()).unwrap();
+    pub fn save_to_db(&self) -> Result<crate::models::Character, crate::repositories::RepoError> {
+        let cls = crate::repositories::get_class_by_name(&self.class)?;
+        let ch = crate::models::Character {
+            id: None,
+            name: self.name.clone(),
+            class_id: cls.id,
+            race: self.race.clone(),
+            strength: self.strength,
+            dexterity: self.dexterity,
+            constitution: self.constitution,
+            intelligence: self.intelligence,
+            wisdom: self.wisdom,
+            charisma: self.charisma,
+        };
+        crate::repositories::create_character(ch)
     }
 
-    pub fn load_from_file(filename: &str) -> Self {
-        let mut file = File::open(filename).unwrap();
-        let mut json = String::new();
-        file.read_to_string(&mut json).unwrap();
-        serde_json::from_str(&json).unwrap()
+    /// Load a CharacterSheet by character ID from the DB.
+    pub fn load_from_db(id: i32) -> Result<Self, crate::repositories::RepoError> {
+        let ch = crate::repositories::get_character(id)?;
+        let cls = crate::repositories::get_class_by_id(ch.class_id)?;
+        Ok(Self {
+            name: ch.name,
+            class: cls.name,
+            race: ch.race,
+            strength: ch.strength,
+            dexterity: ch.dexterity,
+            constitution: ch.constitution,
+            intelligence: ch.intelligence,
+            wisdom: ch.wisdom,
+            charisma: ch.charisma,
+        })
     }
 }
