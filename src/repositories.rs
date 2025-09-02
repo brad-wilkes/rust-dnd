@@ -1,3 +1,4 @@
+use crate::models;
 use crate::db::{pool, PgPooledConn, DbInitError};
 use crate::models::{Campaign, CampaignMembership, Character, CharacterClass};
 use postgres::Row;
@@ -59,13 +60,35 @@ fn conn() -> Result<PgPooledConn, RepoError> {
 }
 
 // CharacterClass
-pub fn list_classes() -> Result<Vec<CharacterClass>, RepoError> {
-    let mut c = conn()?;
-    let rows = c.query("SELECT * FROM character_classes ORDER BY name", &[])?;
-    Ok(rows.into_iter().map(map_class).collect())
+// pub fn list_classes() -> Result<Vec<CharacterClass>, RepoError> {
+//     let mut c = conn()?;
+//     let rows = c.query("SELECT * FROM character_classes ORDER BY name", &[])?;
+//     Ok(rows.into_iter().map(map_class).collect())
+// }
+
+pub fn get_all_classes() -> Result<Vec<models::CharacterClass>, RepoError> {
+    let pool = crate::db::pool()?;
+    let mut conn = pool.get()?;
+    let rows = conn.query(
+        "SELECT id, name, hit_die, primary_abilities, saving_throws, armor_proficiencies, weapon_proficiencies, tool_proficiencies, spellcasting FROM character_classes",
+        &[]
+    )?;
+    Ok(rows.into_iter().map(|row| {
+        crate::models::CharacterClass {
+            id: row.get(0),
+            name: row.get(1),
+            hit_die: row.get(2),
+            primary_abilities: row.get(3),
+            saving_throws: row.get(4),
+            armor_proficiencies: row.get(5),
+            weapon_proficiencies: row.get(6),
+            tool_proficiencies: row.get(7),
+            spellcasting: row.get(8),
+        }
+    }).collect())
 }
 
-pub fn get_class_by_name(name: &str) -> Result<CharacterClass, RepoError> {
+    pub fn get_class_by_name(name: &str) -> Result<CharacterClass, RepoError> {
     let mut c = conn()?;
     let row = c
         .query_opt("SELECT * FROM character_classes WHERE name = $1", &[&name])?
