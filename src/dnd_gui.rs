@@ -6,6 +6,7 @@ pub struct DndGui {
     pub character: CharacterSheet,
     pub status: String,
     pub class_list: Vec<crate::models::CharacterClass>,
+    pub selected_class: Option<usize>,
     pub selected_die: usize,
     pub last_roll: Option<u32>
 }
@@ -13,7 +14,7 @@ pub struct DndGui {
 impl Default for DndGui {
     fn default() -> Self {
         let class_list = crate::repositories::get_all_classes().unwrap_or_default();
-        let selected_class = 0;
+        let selected_class = if class_list.is_empty() { None } else { Some(0) };
         let mut character = CharacterSheet::new();
         if let Some(first_class) = class_list.get(0) {
             character.class = first_class.name.clone();
@@ -41,13 +42,29 @@ impl epi::App for DndGui {
 
             ui.horizontal(|ui| {
                 ui.label("Class:");
-                ui.text_edit_singleline(&mut self.character.class);
+                let class_names: Vec<&str> = self.class_list.iter().map(|c| c.name.as_str()).collect();
+                let selected_text = self
+                    .selected_class
+                    .and_then(|i| class_names.get(i).copied())
+                    .unwrap_or("Select class");
+                egui::ComboBox::from_id_source("class_combo")
+                    .selected_text(selected_text)
+                    .show_ui(ui, |ui| {
+                        for (i, name) in class_names.iter().enumerate() {
+                            if ui.selectable_value(&mut self.selected_class, Some(i), *name).clicked() {
+                                self.character.class = name.to_string();
+                            }
+                        }
+                    });
             });
 
             ui.horizontal(|ui| {
                 ui.label("Race:");
                 ui.text_edit_singleline(&mut self.character.race);
             });
+
+            ui.separator();
+            ui.label("Attributes:");
 
             ui.horizontal(|ui| {
                 ui.label("Strength:");
@@ -101,7 +118,7 @@ impl epi::App for DndGui {
 
             let die_types = DieType::all();
             let die_names: Vec<&str> = die_types.iter().map(|d| d.as_str()).collect();
-            egui::ComboBox::from_label("Die")
+            egui::ComboBox::from_label("")
                 .selected_text(die_names[self.selected_die])
                 .show_ui(ui, |ui| {
                     for (i, name) in die_names.iter().enumerate() {
@@ -119,6 +136,7 @@ impl epi::App for DndGui {
             }
         });
     }
+
     fn name(&self) -> &str {
         "D&D Character Sheet"
     }
