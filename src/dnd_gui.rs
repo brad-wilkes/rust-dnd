@@ -5,17 +5,26 @@ use crate::dice::{DieType, roll_die};
 pub struct DndGui {
     pub character: CharacterSheet,
     pub status: String,
+    pub class_list: Vec<crate::models::CharacterClass>,
     pub selected_die: usize,
     pub last_roll: Option<u32>
 }
 
 impl Default for DndGui {
     fn default() -> Self {
+        let class_list = crate::repositories::get_all_classes().unwrap_or_default();
+        let selected_class = 0;
+        let mut character = CharacterSheet::new();
+        if let Some(first_class) = class_list.get(0) {
+            character.class = first_class.name.clone();
+        }
         Self {
-            character: CharacterSheet::new(),
+            character,
             status: String::new(),
-            selected_die: 0,
+            class_list,
+            selected_class,
             last_roll: None,
+            selected_die: 0,
         }
     }
 }
